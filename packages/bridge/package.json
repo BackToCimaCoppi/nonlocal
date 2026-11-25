@@ -1,0 +1,50 @@
+{
+  "name": "nonlocal-bridge",
+  "version": "0.1.0",
+  "description": "Cross-platform TypeScript ACP-to-WebSocket bridge for Nonlocal",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/BackToCimaCoppi/nonlocal.git",
+    "directory": "packages/bridge"
+  },
+  "homepage": "https://github.com/BackToCimaCoppi/nonlocal#readme",
+  "bugs": {
+    "url": "https://github.com/BackToCimaCoppi/nonlocal/issues"
+  },
+  "keywords": [
+    "nonlocal",
+    "acp",
+    "antigravity",
+    "bridge",
+    "websocket",
+    "ai-agent",
+    "ios"
+  ],
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "bin": {
+    "nonlocal-bridge": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "templates",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc && chmod +x dist/cli.js",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.0",
+    "@types/ws": "^8.5.14",
+    "typescript": "^5.7.3"
+  }
+}

@@ -1,0 +1,110 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "NSLocalNetworkUsageDescription" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nonlocal benötigt Zugriff auf Ihr lokales Netzwerk, um ACP-Agenten auf Ihrem Computer zu erreichen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nonlocal needs access to your local network to reach ACP agents running on your computer."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nonlocal necesita acceso a tu red local para conectarse a los agentes ACP que se ejecutan en tu ordenador."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nonlocal a besoin d'accéder à votre réseau local pour joindre les agents ACP exécutés sur votre ordinateur."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nonlocal이 컴퓨터에서 실행 중인 ACP 에이전트에 연결하려면 로컬 네트워크 접근 권한이 필요합니다."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nonlocal требуется доступ к локальной сети для подключения к агентам ACP на вашем компьютере."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nonlocal 需要访问您的本地网络以连接电脑上运行的 ACP 代理。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nonlocal 需要存取您的區域網路以連線至電腦上執行的 ACP 代理程式。"
+          }
+        }
+      }
+    },
+    "NSPhotoLibraryUsageDescription" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nonlocal benötigt Zugriff auf Ihre Fotomediathek, um Bilder an Nachrichten anzuhängen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nonlocal needs access to your photo library to attach images to messages."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nonlocal necesita acceso a tu fototeca para adjuntar imágenes a los mensajes."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nonlocal a besoin d'accéder à votre photothèque pour joindre des images aux messages."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nonlocal이 메시지에 이미지를 첨부하려면 사진 보관함 접근 권한이 필요합니다."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nonlocal требуется доступ к вашей медиатеке, чтобы прикреплять изображения к сообщениям."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nonlocal 需要访问您的照片图库以在消息中附加图片。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nonlocal 需要存取您的照片圖庫以在訊息中附加圖片。"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

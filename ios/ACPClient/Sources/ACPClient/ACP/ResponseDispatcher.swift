@@ -1,0 +1,284 @@
+import Foundation
+import ACP
+
+// MARK: - Response Action Types
+
+/// Actions that can result from dispatching an RPC response.
+/// The view model applies these to update UI state.
+public enum ACPResponseAction: Sendable, Equatable {
+    /// A session was created or loaded; activate it.
+    case sessionActivated(ACPSessionActivation)
+
+    /// Mark a session as materialized on the server.
+    case sessionMaterialized(sessionId: String)
+
+    /// Session placeholder should be migrated to resolved ID.
+    case sessionMigrated(from: String, to: String)
+
+    /// Mode was changed via session/set_mode.
+    case modeChanged(modeId: String)
+
+    /// Session config options changed.
+    case configOptionsChanged([ACPSessionConfigOption])
+
+    /// Initialize response was received.
+    case initialized(ACPInitializeResult)
+
+    /// Stop reason received (prompt completed).
+    case stopReason(String)
+
+    /// Session list received from server.
+    case sessionListReceived(ACPSessionListResult)
+
+    /// Session was loaded; finish streaming.
+    case sessionLoadCompleted
+
+    /// An RPC error was received.
+    case rpcError(ACPRPCErrorInfo)
+}
+
+/// Session activation details.
+public struct ACPSessionActivation: Sendable, Equatable {
+    public let sessionId: String
+    public let cwd: String?
+    public let modes: ACPModesInfo?
+    public let configOptions: [ACPSessionConfigOption]
+
+    public init(
+        sessionId: String,
+        cwd: String? = nil,
+        modes: ACPModesInfo? = nil,
+        configOptions: [ACPSessionConfigOption] = []
+    ) {
+        self.sessionId = sessionId
+        self.cwd = cwd
+        self.modes = modes
+        self.configOptions = configOptions
+    }
+}
+
+/// Session list result with parsed summaries.
+public struct ACPSessionListResult: Sendable, Equatable {
+    public let sessions: [SessionSummary]
+
+    public init(sessions: [SessionSummary]) {
+        self.sessions = sessions
+    }
+}
+
+/// RPC error information.
+public struct ACPRPCErrorInfo: Sendable, Equatable {
+    public let method: String?
+    public let code: Int
+    public let message: String
+
+    public init(method: String?, code: Int, message: String) {
+        self.method = method
+        self.code = code
+        self.message = message
+    }
+}
+
+// MARK: - Dispatch Context
+
+/// Context needed for response dispatch decisions.
+public struct ACPResponseDispatchContext: Sendable {
+    /// The pending session creation placeholder ID, if any.
+    public let pendingPlaceholderId: String?
+
+    /// The pending working directory for session creation.
+    public let pendingCwd: String?
+
+    /// Transform function for working directory redaction.
+    public let cwdTransform: @Sendable (String?) -> String?
+
+    public init(
+        pendingPlaceholderId: String? = nil,
+        pendingCwd: String? = nil,
+        cwdTransform: @escaping @Sendable (String?) -> String? = { $0 }
+    ) {
+        self.pendingPlaceholderId = pendingPlaceholderId
+        self.pendingCwd = pendingCwd
+        self.cwdTransform = cwdTransform
+    }
+}
+
+// MARK: - Response Dispatcher
+
+/// Dispatches JSON-RPC responses into typed actions.
+/// This centralizes response parsing logic and makes it unit-testable.
+public enum ACPResponseDispatcher {
+
+    /// Dispatch a successful response into actions.
+    public static func dispatchSuccess(
+        result: ACP.Value?,
+        method: String?,
+        context: ACPResponseDispatchContext
+    ) -> [ACPResponseAction] {
+        var actions: [ACPResponseAction] = []
+
+        // Keep Nonlocal bridge extension responses isolated from generic ACP session/stopReason heuristics.
+        if method == NonlocalMethods.sessionSync
+            || method == NonlocalMethods.turnCompleted
+            || method == NonlocalMethods.sessionStale
+            || method == NonlocalMethods.renameSession
+            || method == NonlocalMethods.usage
+            || method == NonlocalMethods.usageUpdated
+            || method == NonlocalMethods.sessionInfo
+            || method == NonlocalMethods.sessionDeleted
+            || method == NonlocalMethods.fsList
+            || method == NonlocalMethods.fsReadFile
+            || method == NonlocalMethods.deleteSession {
+            return actions
+        }
+
+        // Session activation (session/new, session/load)
+        if let sessionAction = parseSessionActivation(result: result, method: method, context: context) {
+            if let placeholderId = context.pendingPlaceholderId,
+               isSessionNewMethod(method),
+               placeholderId != sessionAction.sessionId {
+                actions.append(.sessionMigrated(from: placeholderId, to: sessionAction.sessionId))
+            }
+
+            actions.append(.sessionActivated(sessionAction))
+
+            if let method, isSessionMaterializingMethod(method) {
+                actions.append(.sessionMaterialized(sessionId: sessionAction.sessionId))
+            }
+        }
+
+        // Mode change (session/set_mode)
+        if method == "session/set_mode" {
+            if let setModeResult = ACPSessionResponseParser.parseSetMode(result: result) {
+                actions.append(.modeChanged(modeId: setModeResult.currentModeId))
+            }
+        }
+
+        if method == ACPMethods.sessionSetConfigOption {
+            let configOptions = ACPSessionResponseParser.parseConfigOptions(result: result)
+            if !configOptions.isEmpty {
+                actions.append(.configOptionsChanged(configOptions))
+                if let modeInfo = ACPSessionConfigOptionParser.modeInfo(from: configOptions),
+                   let currentModeId = modeInfo.currentModeId {
+                    actions.append(.modeChanged(modeId: currentModeId))
+                }
+            }
+        }
+
+        // Initialize response
+        if isInitializeResponse(method: method, result: result) {
+            if let parsed = ACPInitializeParser.parse(result: result) {
+                actions.append(.initialized(parsed))
+            }
+        }
+
+        // Stop reason
+        if let stopReason = result?.objectValue?["stopReason"]?.stringValue {
+            actions.append(.stopReason(stopReason))
+        }
+
+        // Session list
+        if method == "session/list" {
+            let listResult = parseSessionList(result: result, context: context)
+            actions.append(.sessionListReceived(listResult))
+        }
+
+        // Session load completion
+        if method == "session/load" {
+            actions.append(.sessionLoadCompleted)
+        }
+
+        return actions
+    }
+
+    /// Dispatch an error response into actions.
+    public static func dispatchError(
+        code: Int,
+        message: String,
+        method: String?
+    ) -> [ACPResponseAction] {
+        let errorInfo = ACPRPCErrorInfo(method: method, code: code, message: message)
+        return [.rpcError(errorInfo)]
+    }
+
+    // MARK: - Private Helpers
+
+    private static func isSessionNewMethod(_ method: String?) -> Bool {
+        method == "session/new" || method == "session/create"
+    }
+
+    private static func isSessionMaterializingMethod(_ method: String) -> Bool {
+        ["session/new", "session/create", "session/load"].contains(method)
+    }
+
+    private static func isInitializeResponse(method: String?, result: ACP.Value?) -> Bool {
+        if method == "initialize" || method == "acp/initialize" {
+            return true
+        }
+        let resultObj = result?.objectValue
+        return resultObj?["agent"] != nil || resultObj?["agentInfo"] != nil
+    }
+
+    private static func parseSessionActivation(
+        result: ACP.Value?,
+        method: String?,
+        context: ACPResponseDispatchContext
+    ) -> ACPSessionActivation? {
+        if isSessionNewMethod(method) {
+            if let parsed = ACPSessionResponseParser.parseSessionNew(
+                result: result,
+                fallbackCwd: context.pendingCwd
+            ) {
+                return ACPSessionActivation(
+                    sessionId: parsed.sessionId,
+                    cwd: parsed.cwd,
+                    modes: parsed.modes,
+                    configOptions: parsed.configOptions
+                )
+            }
+        } else if method == "session/load" {
+            if let requestedId = result?.objectValue?["sessionId"]?.stringValue
+                ?? result?.objectValue?["session"]?.stringValue {
+                let parsed = ACPSessionResponseParser.parseSessionLoad(
+                    result: result,
+                    requestedSessionId: requestedId
+                )
+                return ACPSessionActivation(
+                    sessionId: parsed.sessionId,
+                    cwd: parsed.cwd,
+                    modes: parsed.modes,
+                    configOptions: parsed.configOptions
+                )
+            }
+        } else if let id = result?.objectValue?["sessionId"]?.stringValue
+            ?? result?.objectValue?["session"]?.stringValue {
+            let modes = ACPSessionResponseParser.parseModes(from: result?.objectValue)
+            let cwd = result?.objectValue?["cwd"]?.stringValue
+            let configOptions = ACPSessionResponseParser.parseConfigOptions(result: result)
+            return ACPSessionActivation(sessionId: id, cwd: cwd, modes: modes, configOptions: configOptions)
+        }
+
+        return nil
+    }
+
+    private static func parseSessionList(
+        result: ACP.Value?,
+        context: ACPResponseDispatchContext
+    ) -> ACPSessionListResult {
+        let resultObj = result?.objectValue
+        let sessionsArray = resultObj?["sessions"] ?? resultObj?["items"]
+
+        guard case let .array(sessions) = sessionsArray else {
+            return ACPSessionListResult(sessions: [])
+        }
+
+        let parsedSummaries = ACPSessionListParser.parse(
+            sessions: sessions,
+            transformCwd: { cwd in
+                context.cwdTransform(cwd) ?? cwd
+            }
+        )
+
+        return ACPSessionListResult(sessions: parsedSummaries)
+    }
+}

@@ -1,0 +1,12 @@
+# Nonlocal + Cloudflare Tunnel (cloudflared)
+# Note: Only expose WebSocket paths; local diagnostic endpoints stay loopback-only.
+tunnel: <YOUR_CLOUDFLARE_TUNNEL_ID>
+credentials-file: /path/to/<YOUR_TUNNEL_CREDENTIALS_FILE>.json
+
+ingress:
+  - hostname: <YOUR_BRIDGE_HOSTNAME>.example.com
+    path: ^/(acp|ws)$
+    service: http://127.0.0.1:{{PORT}}
+    originRequest:
+      noTLSVerify: false
+  - service: http_status:404

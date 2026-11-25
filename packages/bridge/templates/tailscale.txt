@@ -1,0 +1,14 @@
+# Nonlocal + Tailscale Serve (Recommended for private remote access)
+# Prerequisites: Bridge running on loopback ({{HOST}}:{{PORT}})
+#
+# Option A: Tailscale HTTPS Serve (exposes encrypted WSS endpoint on your tailnet only)
+# Only proxy the WebSocket paths; NEVER expose /health publicly.
+tailscale serve --bg --https=443 --set-path=/acp http://127.0.0.1:{{PORT}}/acp
+
+# In the Nonlocal / Agmente iOS client, connect to:
+#   wss://<YOUR_MACHINE_NAME>.<YOUR_TAILNET_SUFFIX>.ts.net/acp
+#   Authorization: Bearer <TOKEN_FROM_bearer.token>
+#
+# To inspect current rules or turn off later:
+#   tailscale serve status
+#   tailscale serve --https=443 --set-path=/acp off

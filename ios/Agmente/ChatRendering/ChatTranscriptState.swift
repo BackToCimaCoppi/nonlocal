@@ -1,0 +1,44 @@
+import Foundation
+import SwiftUI
+import Observation
+import ACP
+import ACPClient
+
+@MainActor
+@Observable
+final class ChatTranscriptState {
+    var isAtBottom: Bool = true
+
+    @ObservationIgnored
+    weak var listView: HighPerformanceChatListView?
+
+    @ObservationIgnored
+    var scrollToBottomHandler: ((Bool) -> Void)?
+
+    func scrollToBottom(animated: Bool = true) {
+        if let listView {
+            listView.scrollToBottom(animated: animated)
+            return
+        }
+        scrollToBottomHandler?(animated)
+    }
+}
+
+struct ChatEntryActionHandlers {
+    var onACPPermissionResponse: ((ACP.ID, String) -> Void)?
+    var onUndoFileChanges: (() -> Void)?
+    var onReviewFileChanges: (([FileChangeSummaryItem]) -> Void)?
+    var onOpenLink: ((String) -> Void)?
+    var onOpenMermaidFullscreen: ((String) -> Void)?
+    var onRetryFailedMessage: ((UUID) -> Void)?
+
+    static let none = ChatEntryActionHandlers()
+}
+
+struct ChatRendererConfig {
+    var autoScrollTolerance: CGFloat = 4
+    var maxMarkdownCharacters: Int = 20000
+    var enablePerformanceLogging: Bool = false
+
+    static let `default` = ChatRendererConfig()
+}

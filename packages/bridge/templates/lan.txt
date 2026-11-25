@@ -1,0 +1,15 @@
+# Nonlocal + Direct LAN / Home Wi-Fi Access (Plaintext WS — use only on trusted local networks)
+#
+# 1. Reconfigure Nonlocal Bridge to listen on your machine's LAN IPv4 address (never commit this IP):
+#    nonlocal-bridge init --yes --host 198.51.100.10 --port {{PORT}} --allow-non-loopback --force
+#    # Or edit ~/.config/nonlocal/config.json: server.host="<YOUR_LAN_IPV4>", server.allowNonLoopback=true
+#
+# 2. Restart the bridge and check health locally:
+#    nonlocal-bridge restart
+#    nonlocal-bridge status
+#
+# 3. Connect from iOS over trusted LAN:
+#    ws://<YOUR_LAN_IPV4>:{{PORT}}/acp
+#    Authorization: Bearer <TOKEN_FROM_bearer.token>
+#
+# Security reminder: ws:// traffic on a LAN is unencrypted; prefer Tailscale WSS or VPS TLS tunnel off untrusted Wi-Fi.

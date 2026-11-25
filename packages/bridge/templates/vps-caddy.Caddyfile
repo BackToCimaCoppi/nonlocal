@@ -1,0 +1,29 @@
+# Nonlocal + Caddy reverse proxy (WSS + single-hop X-Forwarded-For + /health blocked)
+<YOUR_BRIDGE_DOMAIN>.example.com {
+	# Explicitly deny /health externally
+	handle /health* {
+		respond "Not Found" 404
+	}
+
+	# Outer per-IP rate limiting (requires caddy-ratelimit module)
+	rate_limit {
+		zone nonlocal_ws {
+			key {remote_host}
+			events 10
+			window 1m
+		}
+	}
+
+	@ws_paths path /acp /ws
+	handle @ws_paths {
+		reverse_proxy 127.0.0.1:{{PORT}} {
+			# Overwrite (single-hop) X-Forwarded-For with verified client IP
+			header_up X-Forwarded-For {remote_host}
+			header_up -X-Real-IP
+		}
+	}
+
+	handle {
+		respond "Not Found" 404
+	}
+}

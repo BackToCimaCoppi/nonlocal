@@ -1,0 +1,41 @@
+# Environment & credentials (NEVER commit)
+.env
+.env.*
+!.env.example
+secrets/
+*.pem
+*.key
+*.p12
+*.mobileprovision
+*_ed25519*
+bearer.token
+
+# macOS / Editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Xcode / SwiftPM build caches and local signing
+ios/DerivedData/
+ios/.DerivedDataDevice/
+ios/.DerivedDataSim/
+DerivedData/
+.DerivedDataDevice/
+.DerivedDataSim/
+**/build/
+**/.build/
+**/xcuserdata/
+**/*.xcbkptlist
+**/*.xcuserstate
+**/*.xcsettings
+**/Signing.local.xcconfig
+*.local.xcconfig
+
+# Logs & temporary artifacts
+*.log
+tmp/
+.tmp-*
+node_modules/
